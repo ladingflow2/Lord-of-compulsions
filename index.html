@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script>document.documentElement.className += " js";</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Farol: guia para vencer hábitos destrutivos</title>
+<meta name="description" content="Guia para largar cigarro, bebida, apostas e outros hábitos que fazem mal: como reconhecer gatilhos, atravessar a vontade e continuar depois de uma recaída.">
+<meta name="theme-color" content="#07080a">
+<meta property="og:title" content="Farol: guia para vencer hábitos destrutivos">
+<meta property="og:description" content="A vontade de ceder vai voltar. Monte seu plano antes que ela chegue.">
+<meta property="og:image" content="poster.webp">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Cinzel:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07080a;
+    --ink: #f1ece2;
+    --ink-soft: rgba(241, 236, 226, .72);
+    --gold: #d9b873;
+    --glow: #9fc8ff;
+    --serif: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+    --caps: "Cinzel", "Trajan Pro", Georgia, serif;
+    --pad: clamp(22px, 6vw, 96px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: var(--bg); -webkit-text-size-adjust: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--serif);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ---------- Carregamento ---------- */
+  #loader {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 22px; background: var(--bg);
+    transition: opacity .9s ease, visibility .9s;
+  }
+  #loader.done { opacity: 0; visibility: hidden; }
+  #loader .mark {
+    font-family: var(--caps); font-size: 12px; letter-spacing: .5em;
+    color: var(--gold); padding-left: .5em;
+  }
+  #loader .bar { width: min(220px, 56vw); height: 1px; background: rgba(241,236,226,.15); overflow: hidden; }
+  #loader .bar i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .2s linear; }
+  #loader .pct { font-family: var(--caps); font-size: 11px; letter-spacing: .3em; color: var(--ink-soft); }
+
+  #err {
+    position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px; text-align: center;
+    padding: 24px; background: rgba(7,8,10,.94); color: var(--ink);
+    font-size: clamp(18px, 2.4vw, 24px); line-height: 1.35;
+  }
+  #err[hidden] { display: none; }
+  #err p { max-width: 30em; }
+  #err b { color: var(--gold); font-weight: 600; }
+
+  /* ---------- Palco ---------- */
+  #stage { position: relative; height: 700vh; }
+  .sticky {
+    position: sticky; top: 0;
+    height: 100vh; height: 100dvh;
+    width: 100%; overflow: hidden; background: var(--bg);
+  }
+  video#scene {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: min(100%, calc(100vh * 16 / 9)); width: min(100%, calc(100dvh * 16 / 9));
+    height: min(100%, calc(100vw * 9 / 16));
+    display: block; background: var(--bg); object-fit: fill; pointer-events: none;
+  }
+  /* janela mais larga que 16:9: sem cortar a imagem, as laterais se dissolvem no fundo */
+  @media (min-aspect-ratio: 18/9) {
+    video#scene { -webkit-mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent); }
+  }
+  /* janela mais alta que 16:9 (tablet): dissolve em cima e embaixo */
+  @media (min-aspect-ratio: 1/1) and (max-aspect-ratio: 15/9) {
+    video#scene { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(to bottom, transparent, #000 7%, #000 93%, transparent); }
+  }
+  /* celular em pé: preenche a tela (o vídeo é horizontal, então corta as laterais) */
+  @media (max-aspect-ratio: 1/1) {
+    video#scene { left: 0; top: 0; transform: none; width: 100%; height: 100%; object-fit: cover; object-position: 46% 50%; }
+  }
+
+  /* escurece as bordas e a base para o texto ficar legível */
+  .shade {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      linear-gradient(to top, rgba(7,8,10,.88) 0%, rgba(7,8,10,.5) 34%, rgba(7,8,10,0) 62%),
+      linear-gradient(to bottom, rgba(7,8,10,.55) 0%, rgba(7,8,10,0) 24%),
+      radial-gradient(ellipse at center, rgba(7,8,10,0) 55%, rgba(7,8,10,.5) 100%);
+  }
+
+  /* ---------- Capítulos ---------- */
+  .chapter {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 0 var(--pad) calc(var(--pad) * .9 + env(safe-area-inset-bottom, 0px));
+    max-width: 1100px;
+    opacity: 0; transform: translate3d(0, 28px, 0);
+    will-change: opacity, transform; pointer-events: none;
+  }
+  .chapter .num {
+    display: flex; align-items: center; gap: 16px;
+    font-family: var(--caps); font-weight: 500;
+    font-size: clamp(11px, 1.4vw, 14px); letter-spacing: .42em;
+    color: var(--gold); margin-bottom: clamp(14px, 2.4vh, 26px);
+  }
+  .chapter .num::after { content: ""; width: clamp(40px, 8vw, 96px); height: 1px; background: currentColor; opacity: .6; }
+  .chapter h2 {
+    font-family: var(--caps); font-weight: 600;
+    font-size: clamp(34px, 7.6vw, 104px);
+    line-height: 1.02; letter-spacing: .04em; text-transform: uppercase;
+    text-shadow: 0 2px 30px rgba(0,0,0,.65);
+  }
+  .chapter p {
+    margin-top: clamp(14px, 2.4vh, 26px);
+    font-size: clamp(20px, 2.9vw, 38px); line-height: 1.25; font-style: italic;
+    color: var(--ink); max-width: 22em;
+    text-shadow: 0 2px 22px rgba(0,0,0,.8);
+  }
+
+  /* ---------- Cabeçalho e progresso ---------- */
+  .top {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: calc(22px + env(safe-area-inset-top, 0px)) var(--pad) 0;
+    font-family: var(--caps); font-size: 11px; letter-spacing: .38em; color: var(--ink-soft);
+    pointer-events: none;
+  }
+  .top .count { color: var(--gold); }
+  .play {
+    pointer-events: auto; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 12px;
+    font: inherit; letter-spacing: inherit; color: var(--ink);
+    background: rgba(7,8,10,.35); border: 1px solid rgba(217,184,115,.55);
+    padding: 10px 18px 10px 20px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    transition: background .3s, color .3s; -webkit-tap-highlight-color: transparent;
+  }
+  .play:hover, .play:focus-visible { background: var(--gold); color: #111; outline: none; }
+  .play svg { width: 10px; height: 10px; fill: currentColor; flex: none; }
+  .play .i-pause { display: none; }
+  .play.on .i-play { display: none; }
+  .play.on .i-pause { display: block; }
+
+  .rail {
+    position: absolute; z-index: 3; right: calc(var(--pad) * .5); top: 50%;
+    transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 14px; pointer-events: none;
+  }
+  .rail span { width: 1px; height: 34px; background: rgba(241,236,226,.25); position: relative; overflow: hidden; }
+  .rail span b { position: absolute; left: 0; top: 0; width: 100%; height: 0; background: var(--gold); }
+
+  .cue {
+    position: absolute; z-index: 3; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    font-family: var(--caps); font-size: 10px; letter-spacing: .5em; padding-left: .5em;
+    color: var(--ink-soft); text-align: center; pointer-events: none;
+    transition: opacity .5s ease;
+  }
+  .cue::after {
+    content: ""; display: block; width: 1px; height: 38px; margin: 12px auto 0;
+    background: linear-gradient(var(--gold), transparent);
+    animation: drop 2.2s ease-in-out infinite;
+  }
+  @keyframes drop { 0% { transform: scaleY(0); transform-origin: top; } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
+
+  /* ---------- Final ---------- */
+  .end {
+    position: relative; z-index: 2; background: var(--bg);
+    min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 14vh var(--pad) calc(10vh + env(safe-area-inset-bottom, 0px)); gap: 28px;
+  }
+  .end .rule { width: 1px; height: 64px; background: linear-gradient(transparent, var(--gold)); }
+  .end blockquote {
+    font-size: clamp(26px, 4.4vw, 56px); font-style: italic; line-height: 1.2; max-width: 18em;
+  }
+  .end a {
+    font-family: var(--caps); font-size: 11px; letter-spacing: .4em; padding: 16px 26px 16px 30px;
+    color: var(--ink); text-decoration: none; border: 1px solid rgba(217,184,115,.55);
+    transition: background .3s, color .3s;
+  }
+  .end a:hover, .end a:focus-visible { background: var(--gold); color: #111; outline: none; }
+
+  /* ---------- Mobile (retrato) ---------- */
+  @media (max-width: 720px) {
+    .rail { display: none; }
+    .top { letter-spacing: .2em; }
+    .play { padding: 9px 12px 9px 14px; gap: 9px; }
+    .chapter { max-width: none; }
+    .chapter h2 { font-size: clamp(32px, 10.4vw, 54px); letter-spacing: .03em; }
+    .shade {
+      background:
+        linear-gradient(to top, rgba(7,8,10,.94) 0%, rgba(7,8,10,.62) 38%, rgba(7,8,10,0) 68%),
+        linear-gradient(to bottom, rgba(7,8,10,.6) 0%, rgba(7,8,10,0) 20%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cue::after { animation: none; }
+  }
+
+  /* =====================================================
+     GUIA (seções abaixo da animação)
+     ===================================================== */
+  .skip {
+    position: absolute; left: 12px; top: -80px; z-index: 70;
+    background: var(--gold); color: #111; padding: 12px 18px;
+    font-family: var(--caps); font-size: 12px; letter-spacing: .2em; text-decoration: none;
+  }
+  .skip:focus { top: 12px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  .guide { position: relative; z-index: 2; background: var(--bg); }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 var(--pad); }
+  .block { padding: clamp(72px, 11vw, 148px) 0; border-top: 1px solid rgba(217,184,115,.16); }
+  .block:first-child { border-top: 0; }
+
+  .eyebrow {
+    font-family: var(--caps); font-weight: 500; font-size: 12px; letter-spacing: .38em;
+    color: var(--gold); margin-bottom: clamp(18px, 3vw, 28px);
+    display: flex; align-items: center; gap: 16px;
+  }
+  .eyebrow::after { content: ""; flex: 0 0 clamp(36px, 7vw, 80px); height: 1px; background: currentColor; opacity: .55; }
+  .title {
+    font-family: var(--serif); font-weight: 600;
+    font-size: clamp(32px, 5vw, 64px); line-height: 1.08; letter-spacing: -.005em;
+    max-width: 17em; text-wrap: balance;
+  }
+  .lead, .guide p, .guide summary + p {
+    font-family: var(--serif); font-weight: 500;
+    font-size: clamp(20px, 1.9vw, 24px); line-height: 1.5; color: var(--ink-soft);
+  }
+  .guide p + p { margin-top: 1em; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+    min-height: 52px; padding: 0 30px 0 34px; cursor: pointer;
+    font-family: var(--caps); font-weight: 600; font-size: 12px; letter-spacing: .3em;
+    color: #111; background: var(--gold); border: 1px solid var(--gold); text-decoration: none; text-transform: uppercase;
+    transition: background .25s, color .25s; -webkit-tap-highlight-color: transparent;
+  }
+  .btn:hover, .btn:focus-visible { background: transparent; color: var(--gold); outline: none; }
+  .btn:focus-visible, .guide a:focus-visible, .guide summary:focus-visible, .guide input:focus-visible {
+    outline: 2px solid var(--gold); outline-offset: 4px;
+  }
+  .link {
+    font-family: var(--serif); font-size: 20px; font-style: italic; color: var(--ink);
+    text-decoration: underline; text-decoration-color: rgba(217,184,115,.6); text-underline-offset: 5px;
+  }
+
+  /* Intro */
+  .intro { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, .85fr); gap: clamp(36px, 7vw, 110px); align-items: end; }
+  .intro .lead { margin-top: clamp(24px, 3vw, 36px); max-width: 32em; }
+  .intro .btn { margin-top: clamp(28px, 4vw, 44px); }
+  .pull {
+    border-left: 1px solid var(--gold); padding: 6px 0 6px clamp(20px, 3vw, 34px);
+    font-family: var(--serif); font-style: italic; font-weight: 500;
+    font-size: clamp(26px, 3.2vw, 40px); line-height: 1.2;
+  }
+  .pull small { display: block; margin-top: 18px; font-family: var(--caps); font-style: normal; font-size: 11px; letter-spacing: .34em; color: var(--gold); }
+
+  /* Método */
+  /* Linha do tempo: a luz dourada acende conforme a rolagem desce */
+  .timeline { position: relative; margin-top: clamp(40px, 6vw, 80px); --x: 32px; --top: 0px; --len: 0px; --fill: 0px; }
+  .steps { list-style: none; position: relative; z-index: 1; }
+  .timeline .track, .timeline .fill {
+    position: absolute; left: calc(var(--x) - 1px); top: var(--top); width: 2px; border-radius: 2px; pointer-events: none;
+  }
+  .timeline .track { height: var(--len); background: rgba(241,236,226,.12); }
+  .timeline .fill {
+    height: var(--fill); z-index: 0;
+    background: linear-gradient(to bottom, rgba(217,184,115,.55), var(--gold));
+    box-shadow: 0 0 10px 1px rgba(217,184,115,.6), 0 0 26px 4px rgba(217,184,115,.28);
+  }
+  .timeline .fill::after {
+    content: ""; position: absolute; left: 50%; bottom: -3px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%;
+    background: #fff3d0; box-shadow: 0 0 12px 4px rgba(217,184,115,.85); opacity: 0; transition: opacity .3s;
+  }
+  .timeline .fill.live::after { opacity: 1; }
+
+  .step {
+    display: grid; grid-template-columns: clamp(56px, 6vw, 72px) minmax(0, 1fr) minmax(0, 1.5fr);
+    gap: clamp(16px, 3vw, 48px); padding: clamp(32px, 5vw, 64px) 0; align-items: start;
+  }
+  .step .n {
+    position: relative; z-index: 1; display: grid; place-items: center;
+    width: clamp(52px, 5.6vw, 64px); height: clamp(52px, 5.6vw, 64px); border-radius: 50%;
+    background: var(--bg); border: 1px solid rgba(241,236,226,.2);
+    font-family: var(--caps); font-weight: 500; font-size: 14px; letter-spacing: .1em; padding-left: .1em;
+    color: rgba(241,236,226,.4);
+    transition: color .5s ease, border-color .5s ease, box-shadow .6s ease;
+  }
+  .step.on .n {
+    color: #fff3d0; border-color: var(--gold);
+    box-shadow: 0 0 0 5px rgba(217,184,115,.08), 0 0 18px 2px rgba(217,184,115,.55), inset 0 0 14px rgba(217,184,115,.28);
+  }
+  .js .step h3, .js .step .body { opacity: .42; transition: opacity .6s ease; }
+  .js .step.on h3, .js .step.on .body { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) {
+    .step .n, .js .step h3, .js .step .body { transition: none; }
+  }
+  .step h3 { font-family: var(--caps); font-weight: 600; font-size: clamp(16px, 1.7vw, 21px); letter-spacing: .12em; text-transform: uppercase; line-height: 1.35; }
+  .step .chip {
+    display: inline-block; margin-top: 16px; font-family: var(--caps); font-size: 10px; letter-spacing: .26em;
+    color: var(--gold); border: 1px solid rgba(217,184,115,.4); padding: 8px 12px;
+  }
+
+  /* Recursos */
+  .feat {
+    margin-top: clamp(40px, 6vw, 80px); display: grid; gap: 1px;
+    grid-template-columns: 1.25fr 1fr 1fr;
+    background: rgba(217,184,115,.2); border: 1px solid rgba(217,184,115,.2);
+  }
+  .feat article { background: var(--bg); padding: clamp(26px, 3.2vw, 44px); }
+  .feat .big { grid-row: span 2; display: flex; flex-direction: column; justify-content: flex-end; min-height: 340px;
+    background: linear-gradient(to top, rgba(217,184,115,.09), rgba(7,8,10,0) 70%), var(--bg); }
+  .feat h3 { font-family: var(--caps); font-weight: 600; font-size: 14px; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; }
+  .feat .big h3 { font-size: 16px; }
+  .feat .big p { font-size: clamp(22px, 2.2vw, 28px); color: var(--ink); }
+
+  /* Plano */
+  .plan {
+    margin-top: clamp(36px, 5vw, 64px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(32px, 6vw, 90px); border: 1px solid rgba(217,184,115,.4);
+    padding: clamp(24px, 5vw, 64px); background: rgba(217,184,115,.04);
+  }
+  .field + .field { margin-top: 26px; }
+  .field label { display: block; font-family: var(--caps); font-size: 11px; letter-spacing: .26em; color: var(--gold); margin-bottom: 4px; }
+  .field input {
+    width: 100%; min-height: 52px; background: transparent; color: var(--ink);
+    border: 0; border-bottom: 1px solid rgba(241,236,226,.35); border-radius: 0;
+    font-family: var(--serif); font-size: 22px; font-weight: 500; padding: 8px 0;
+  }
+  .field input::placeholder { color: rgba(241,236,226,.38); }
+  .field input:focus { border-bottom-color: var(--gold); }
+  .result { display: flex; flex-direction: column; justify-content: space-between; gap: 28px; min-height: 260px; }
+  .result output {
+    display: block; font-family: var(--serif); font-style: italic; font-weight: 500;
+    font-size: clamp(26px, 3vw, 38px); line-height: 1.25; color: var(--ink);
+  }
+  .result output.empty { color: rgba(241,236,226,.4); }
+  .result .note { font-size: 17px; }
+  .result .row { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; }
+  .copied { font-family: var(--caps); font-size: 11px; letter-spacing: .26em; color: var(--gold); opacity: 0; transition: opacity .3s; }
+  .copied.on { opacity: 1; }
+
+  /* Ajuda profissional */
+  .help { background: #0d0f12; }
+  .help-grid { margin-top: clamp(32px, 5vw, 60px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 90px); }
+  .warn { border-left: 2px solid var(--gold); padding: 4px 0 4px 24px; }
+  .warn strong { display: block; font-family: var(--caps); font-weight: 600; font-size: 12px; letter-spacing: .26em; color: var(--gold); margin-bottom: 12px; }
+  .warn p { color: var(--ink); }
+  .contacts { list-style: none; }
+  .contacts li { padding: 20px 0; border-top: 1px solid rgba(241,236,226,.14); display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 18px; align-items: baseline; }
+  .contacts li:last-child { border-bottom: 1px solid rgba(241,236,226,.14); }
+  .contacts b { font-family: var(--caps); font-weight: 600; font-size: 22px; color: var(--gold); letter-spacing: .06em; }
+  .contacts span { font-family: var(--serif); font-weight: 500; font-size: 20px; line-height: 1.4; color: var(--ink-soft); }
+  .contacts em { font-style: normal; color: var(--ink); }
+
+  /* Dúvidas */
+  .faq { margin-top: clamp(32px, 5vw, 60px); max-width: 860px; }
+  .faq details { border-top: 1px solid rgba(241,236,226,.14); }
+  .faq details:last-child { border-bottom: 1px solid rgba(241,236,226,.14); }
+  .faq summary {
+    list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 24px;
+    min-height: 64px; padding: 18px 0; font-family: var(--serif); font-weight: 600; font-size: clamp(22px, 2.2vw, 28px); line-height: 1.25;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; flex: none; font-family: var(--caps); font-size: 24px; color: var(--gold); transition: transform .25s; }
+  .faq details[open] summary::after { transform: rotate(45deg); }
+  .faq details p { padding: 0 0 26px; max-width: 36em; }
+
+  /* Final */
+  .closing { text-align: center; }
+  .closing .title { margin: 0 auto; }
+  .closing .btn { margin-top: clamp(30px, 4vw, 48px); }
+  .closing .alt { margin-top: 26px; }
+
+  .foot { border-top: 1px solid rgba(241,236,226,.12); padding: 34px 0 calc(40px + env(safe-area-inset-bottom, 0px)); }
+  .foot .wrap { display: flex; flex-wrap: wrap; gap: 14px 40px; justify-content: space-between; align-items: baseline; }
+  .foot p { font-size: 17px; max-width: 46em; color: rgba(241,236,226,.6); }
+  .foot a { font-family: var(--caps); font-size: 11px; letter-spacing: .28em; color: var(--ink); text-decoration: none; border-bottom: 1px solid rgba(217,184,115,.6); padding-bottom: 4px; }
+
+  /* entrada suave (só quando há JavaScript; sem JS tudo aparece) */
+  .js .rv { opacity: 0; transform: translate3d(0, 22px, 0); transition: opacity .8s ease, transform .8s ease; }
+  .js .rv.in { opacity: 1; transform: none; }
+
+  @media (max-width: 860px) {
+    .intro, .plan, .help-grid { grid-template-columns: 1fr; }
+    .step { grid-template-columns: 56px minmax(0, 1fr); column-gap: 18px; row-gap: 10px; }
+    .step .n { grid-row: 1 / span 2; }
+    .step h3 { padding-top: 14px; }
+    .step .body { grid-column: 2; }
+    .feat { grid-template-columns: 1fr; }
+    .feat .big { grid-row: auto; min-height: 0; }
+    .contacts li { grid-template-columns: 78px minmax(0, 1fr); }
+    .btn { width: 100%; }
+    .result .row .btn { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .js .rv { opacity: 1; transform: none; transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<a class="skip" href="#guia">Pular a animação e ir ao guia</a>
+<h1 class="sr-only">Farol: guia para vencer hábitos destrutivos</h1>
+
+<div id="loader" role="status" aria-live="polite">
+  <div class="mark">CARREGANDO</div>
+  <div class="bar"><i id="loadBar"></i></div>
+  <div class="pct" id="loadPct">0%</div>
+</div>
+
+<div id="err" hidden role="alert">
+  <p>Não foi possível carregar o vídeo da animação.</p>
+  <p>Extraia o arquivo .zip por completo e abra o <b>index.html</b> com os arquivos <b>desktop.mp4</b> e <b>mobile.mp4</b> ao lado dele, ou publique a pasta inteira na hospedagem.</p>
+</div>
+
+<main>
+  <section id="stage" aria-label="Animação com quatro capítulos">
+    <div class="sticky">
+      <video id="scene" muted playsinline webkit-playsinline preload="auto" disablepictureinpicture disableremoteplayback poster="poster.webp" aria-label="Cena de batalha: um mago em um cavalo branco enfrenta um exército sombrio diante de uma cidade branca."></video>
+      <div class="shade"></div>
+
+      <div class="top">
+        <span>A LUZ</span>
+        <button class="play" id="play" type="button" aria-label="Assistir a animação inteira sem rolar">
+          <svg class="i-play" viewBox="0 0 10 10" aria-hidden="true"><path d="M1 0.5v9l8-4.5z"/></svg>
+          <svg class="i-pause" viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 0.5h2.5v9H1.5zM6 0.5h2.5v9H6z"/></svg>
+          <span id="playLabel">ASSISTIR</span>
+        </button>
+        <span class="count" id="count">01 / 04</span>
+      </div>
+
+      <div class="rail" aria-hidden="true">
+        <span><b></b></span><span><b></b></span><span><b></b></span><span><b></b></span>
+      </div>
+
+      <article class="chapter" data-i="0">
+        <div class="num">01</div>
+        <h2>O Chamado</h2>
+        <p>Quando a escuridão avança, os fortes não recuam.</p>
+      </article>
+      <article class="chapter" data-i="1">
+        <div class="num">02</div>
+        <h2>O Confronto</h2>
+        <p>Um homem. Um exército. Nenhum passo para trás.</p>
+      </article>
+      <article class="chapter" data-i="2">
+        <div class="num">03</div>
+        <h2>O Poder</h2>
+        <p>A coragem transforma o impossível em batalha.</p>
+      </article>
+      <article class="chapter" data-i="3">
+        <div class="num">04</div>
+        <h2>A Resistência</h2>
+        <p>Mesmo diante das trevas, a luz jamais se rende.</p>
+      </article>
+
+      <div class="cue" id="cue">ROLE</div>
+    </div>
+  </section>
+
+  <div class="guide" id="guia">
+
+    <section class="block" aria-labelledby="t-intro">
+      <div class="wrap intro">
+        <div class="rv">
+          <div class="eyebrow">GUIA PARA HÁBITOS DESTRUTIVOS</div>
+          <h2 class="title" id="t-intro">A vontade de ceder vai voltar. Falta saber o que você faz quando ela chegar.</h2>
+          <p class="lead">Cigarro, bebida, apostas, celular. Todo hábito que faz mal tem um padrão, e padrão dá para mapear. O Farol é um guia que ajuda você a enxergar o seu, montar respostas antes dos momentos difíceis e continuar depois de uma recaída.</p>
+          <p class="lead">Ele não promete cura nem prazo. Organiza o trabalho que você já sabe que precisa fazer.</p>
+          <a class="btn" href="#plano" data-goto="plano">Montar meu plano</a>
+        </div>
+        <blockquote class="pull rv">
+          Você não precisa vencer o exército inteiro hoje. Só o próximo ataque.
+          <small>REGRA DO FAROL</small>
+        </blockquote>
+      </div>
+    </section>
+
+    <section class="block" id="metodo" aria-labelledby="t-metodo">
+      <div class="wrap">
+        <div class="eyebrow rv">O MÉTODO EM QUATRO ETAPAS</div>
+        <h2 class="title rv" id="t-metodo">Quatro etapas, na ordem em que a batalha acontece.</h2>
+        <div class="timeline" id="timeline">
+          <span class="track" aria-hidden="true"></span><span class="fill" aria-hidden="true"></span>
+        <ol class="steps">
+          <li class="step">
+            <div class="n">01</div>
+            <h3>Reconheça o chamado</h3>
+            <div class="body">
+              <p>Todo ataque começa por um gatilho: um horário, um lugar, uma pessoa, uma emoção. Por uma semana, anote quando a vontade aparece e o que aconteceu um pouco antes. Sem corrigir nada, só observar.</p>
+              <span class="chip">NO APP: MAPA DE GATILHOS</span>
+            </div>
+          </li>
+          <li class="step">
+            <div class="n">02</div>
+            <h3>Encare a vontade</h3>
+            <div class="body">
+              <p>A vontade sobe, chega a um pico e passa, mesmo quando você não cede. Seu trabalho não é eliminá-la, é atravessar o pico sem obedecer. Ajuda ter algo pronto para fazer enquanto ela dura.</p>
+              <span class="chip">NO APP: BOTÃO DE VONTADE</span>
+            </div>
+          </li>
+          <li class="step">
+            <div class="n">03</div>
+            <h3>Troque a resposta</h3>
+            <div class="body">
+              <p>Decida antes, com a cabeça fria: se acontecer tal coisa, eu faço tal outra. Planos do tipo "se, então" tendem a funcionar melhor do que decidir na hora, quando a vontade já está no comando.</p>
+              <span class="chip">NO APP: PLANO SE-ENTÃO</span>
+            </div>
+          </li>
+          <li class="step">
+            <div class="n">04</div>
+            <h3>Resista depois de cair</h3>
+            <div class="body">
+              <p>Recaída acontece e não apaga o que você já fez. Anote o que levou a ela, ajuste o plano e volte no dia seguinte. O que pesa é desistir de tentar, não tropeçar.</p>
+              <span class="chip">NO APP: REGISTRO SEM JULGAMENTO</span>
+            </div>
+          </li>
+        </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="recursos" aria-labelledby="t-recursos">
+      <div class="wrap">
+        <div class="eyebrow rv">DENTRO DO APP</div>
+        <h2 class="title rv" id="t-recursos">O que o Farol faz por você nos dias difíceis.</h2>
+        <div class="feat rv">
+          <article class="big">
+            <h3>Botão de vontade</h3>
+            <p>Bateu a vontade? Toque. O app leva você por uma sequência curta: respirar, esperar, escolher a ação do seu plano e registrar como foi.</p>
+          </article>
+          <article>
+            <h3>Mapa de gatilhos</h3>
+            <p>Registrar leva dez segundos. Depois de alguns dias, o app mostra em quais horários e situações a vontade mais aparece.</p>
+          </article>
+          <article>
+            <h3>Plano se-então</h3>
+            <p>Escreva sua resposta para cada situação difícil e receba o lembrete no horário em que ela costuma acontecer.</p>
+          </article>
+          <article>
+            <h3>Dias sem o hábito</h3>
+            <p>Mostra a sequência atual e o total de dias. Uma recaída reinicia a sequência, mas não apaga o total.</p>
+          </article>
+          <article>
+            <h3>Pessoa de confiança</h3>
+            <p>Escolha alguém para receber uma mensagem sua quando o dia estiver pesado. Só é enviada quando você pedir.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="plano" aria-labelledby="t-plano">
+      <div class="wrap">
+        <div class="eyebrow rv">SEU PLANO DE BATALHA</div>
+        <h2 class="title rv" id="t-plano">Monte o primeiro plano agora, em um minuto.</h2>
+        <div class="plan rv">
+          <div>
+            <div class="field">
+              <label for="f-gatilho">QUANDO A VONTADE APARECE</label>
+              <input id="f-gatilho" type="text" autocomplete="off" maxlength="90" placeholder="Ex.: eu termino o almoço">
+            </div>
+            <div class="field">
+              <label for="f-habito">O QUE VOCÊ NÃO VAI FAZER</label>
+              <input id="f-habito" type="text" autocomplete="off" maxlength="90" placeholder="Ex.: fumar">
+            </div>
+            <div class="field">
+              <label for="f-acao">O QUE VOCÊ VAI FAZER NO LUGAR</label>
+              <input id="f-acao" type="text" autocomplete="off" maxlength="120" placeholder="Ex.: escovar os dentes e caminhar dez minutos">
+            </div>
+          </div>
+          <div class="result">
+            <output id="plano-texto" class="empty" for="f-gatilho f-habito f-acao" aria-live="polite">Preencha os três campos e o seu plano aparece aqui.</output>
+            <div>
+              <div class="row">
+                <button class="btn" type="button" id="copiar">Copiar meu plano</button>
+                <span class="copied" id="copiado" role="status"></span>
+              </div>
+              <p class="note" style="margin-top:18px">O que você escreve fica só nesta página. Nada é enviado.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block help" id="ajuda" aria-labelledby="t-ajuda">
+      <div class="wrap">
+        <div class="eyebrow rv">QUANDO PEDIR AJUDA</div>
+        <h2 class="title rv" id="t-ajuda">Alguns hábitos precisam de um profissional ao seu lado.</h2>
+        <div class="help-grid">
+          <div class="rv">
+            <p>O Farol organiza o seu esforço, mas não substitui médico nem psicólogo. Procure ajuda se o hábito atrapalha o trabalho, a família ou a saúde, se você já tentou parar várias vezes sem conseguir, ou se passa mal quando fica sem.</p>
+            <div class="warn" style="margin-top:32px">
+              <strong>ATENÇÃO COM O ÁLCOOL</strong>
+              <p>Quem bebe muito e há muito tempo pode ter abstinência grave ao parar de uma vez. Converse com um médico antes de parar.</p>
+            </div>
+          </div>
+          <ul class="contacts rv">
+            <li><b>188</b><span><em>CVV.</em> Apoio emocional por telefone, gratuito, 24 horas por dia.</span></li>
+            <li><b>192</b><span><em>SAMU.</em> Urgência médica, quando há risco imediato.</span></li>
+            <li><b>136</b><span><em>Disque Saúde.</em> Informações sobre os serviços do SUS.</span></li>
+            <li><b>CAPS</b><span><em>CAPS AD e UBS.</em> O SUS atende dependência de álcool e outras drogas. Procure o posto de saúde mais próximo.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="duvidas" aria-labelledby="t-duvidas">
+      <div class="wrap">
+        <div class="eyebrow rv">DÚVIDAS</div>
+        <h2 class="title rv" id="t-duvidas">O que as pessoas perguntam antes de começar.</h2>
+        <div class="faq rv">
+          <details>
+            <summary>Serve para qualquer hábito?</summary>
+            <p>Serve para hábitos do dia a dia, como cigarro, celular, apostas e excesso de açúcar. Em caso de dependência química, use o app junto com acompanhamento profissional.</p>
+          </details>
+          <details>
+            <summary>Em quanto tempo eu vejo resultado?</summary>
+            <p>Não existe um número mágico de dias. Cada pessoa tem o seu ritmo, e cada hábito pesa de um jeito. O app acompanha o que está ao seu alcance: quantas vezes você aplicou o plano e quantas vontades atravessou.</p>
+          </details>
+          <details>
+            <summary>E se eu recair?</summary>
+            <p>Registre sem se punir: o que aconteceu e o que veio antes. O Farol usa isso para ajustar o plano. Quem recai e volta continua no caminho.</p>
+          </details>
+          <details>
+            <summary>Preciso contar para alguém?</summary>
+            <p>Não. Mas ter uma pessoa de confiança ajuda nos dias ruins, por isso o app deixa você escolher uma, se quiser.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="block closing" aria-labelledby="t-final">
+      <div class="wrap rv">
+        <div class="eyebrow" style="justify-content:center">PRIMEIRO PASSO</div>
+        <h2 class="title" id="t-final">A luz não se rende. Comece pelo próximo gatilho.</h2>
+        <a class="btn" href="#plano" data-goto="plano">Montar meu plano</a>
+        <p class="alt"><a class="link" href="mailto:contato@exemplo.com.br?subject=Avisar%20quando%20o%20Farol%20sair">Quero ser avisado quando o app sair</a></p>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <div class="wrap">
+        <p>Farol (nome provisório). Este guia é informativo e não substitui avaliação médica ou psicológica.</p>
+        <a href="#" id="again">VOLTAR À ANIMAÇÃO</a>
+      </div>
+    </footer>
+  </div>
+</main>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Configuração ----------
+  const PORTRAIT_MQ = window.matchMedia("(max-aspect-ratio: 1/1)");
+  const PORTRAIT = PORTRAIT_MQ.matches;                       // celular em pé usa o vídeo menor
+  const VIDEO_URL = window.__VIDEO__ || (PORTRAIT ? "mobile.mp4" : "desktop.mp4");
+  const LERP = 0.18;                                          // inércia da rolagem
+
+  // Cada capítulo: início e fim (fração do scroll) em que fica visível
+  const CHAPTERS = [
+    { a: 0.00, b: 0.23 },
+    { a: 0.25, b: 0.48 },
+    { a: 0.50, b: 0.73 },
+    { a: 0.75, b: 1.00 }
+  ];
+
+  const v       = document.getElementById("scene");
+  const stage   = document.getElementById("stage");
+  const chapEls = [...document.querySelectorAll(".chapter")];
+  const railBars = [...document.querySelectorAll(".rail b")];
+  const countEl = document.getElementById("count");
+  const cueEl   = document.getElementById("cue");
+  const loader  = document.getElementById("loader");
+  const loadBar = document.getElementById("loadBar");
+  const loadPct = document.getElementById("loadPct");
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let duration = 0, started = false;
+
+  function setPct(f) {
+    const pct = Math.max(0, Math.min(100, Math.round(f * 100)));
+    loadBar.style.width = pct + "%"; loadPct.textContent = pct + "%";
+  }
+  function showError() {
+    document.getElementById("err").hidden = false;
+    loader.classList.add("done");
+  }
+
+  // ---------- Carregamento: baixa o vídeo inteiro para a rolagem ficar instantânea ----------
+  async function loadVideo() {
+    try {
+      if (VIDEO_URL.startsWith("data:") || location.protocol === "file:") throw new Error("direct");
+      const res = await fetch(VIDEO_URL);
+      if (!res.ok) throw new Error(res.status);
+      const total = +res.headers.get("content-length") || 0;
+      const reader = res.body.getReader(), chunks = [];
+      let got = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value); got += value.length;
+        setPct(total ? got / total : 0.5);
+      }
+      v.src = URL.createObjectURL(new Blob(chunks, { type: "video/mp4" }));
+    } catch (e) {
+      v.src = VIDEO_URL;                                      // arquivo local ou sem fetch
+    }
+    const waitLoaded = () => new Promise(resolve => {
+      if (v.readyState >= 2) return resolve(true);
+      v.addEventListener("loadeddata", () => resolve(true), { once: true });
+      v.addEventListener("error", () => resolve(false), { once: true });
+      setTimeout(() => resolve(v.readyState >= 2), 15000);
+    });
+    v.load();
+    let ok = await waitLoaded();
+    if (!ok && VIDEO_URL.startsWith("data:")) {
+      try {
+        const bin = atob(VIDEO_URL.split(",")[1]), arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        v.src = URL.createObjectURL(new Blob([arr], { type: "video/mp4" }));
+        v.load(); ok = await waitLoaded();
+      } catch (e) {}
+    }
+    if (!ok || !v.duration) return showError();
+    duration = v.duration;
+    start();
+  }
+
+  function start() {
+    started = true;
+    setPct(1);
+    // "destrava" a decodificação no iOS/Safari (vídeo mudo)
+    v.play().then(() => v.pause()).catch(() => {});
+    v.currentTime = 0;
+    readScroll();
+    loader.classList.add("done");
+    requestAnimationFrame(tick);
+  }
+
+  // ---------- Scroll ----------
+  let target = 0, current = 0, progress = 0, maxY = 1;
+  function readScroll() {
+    const rect = stage.getBoundingClientRect();
+    maxY = stage.offsetHeight - window.innerHeight;
+    progress = Math.max(0, Math.min(1, -rect.top / maxY));
+    // não chega ao último instante exato (alguns navegadores mostram preto)
+    target = progress * Math.max(0, duration - 0.05);
+  }
+  window.addEventListener("scroll", readScroll, { passive: true });
+  window.addEventListener("resize", readScroll, { passive: true });
+
+  const smooth = x => x * x * (3 - 2 * x);
+
+  function updateUI(p) {
+    let active = 0;
+    CHAPTERS.forEach((c, i) => {
+      const el = chapEls[i];
+      const fade = 0.035;
+      let o = 0, y = 0;
+      if (p >= c.a - fade && p <= c.b + fade) {
+        const inn  = Math.min(1, (p - (c.a - fade)) / (fade * 2));
+        const out  = Math.min(1, ((c.b + fade) - p) / (fade * 2));
+        const i1 = i === 0 ? 1 : smooth(inn);
+        const o1 = i === CHAPTERS.length - 1 ? 1 : smooth(out);
+        o = Math.min(i1, o1);
+        y = (1 - i1) * 28 - (1 - o1) * 28;
+      }
+      el.style.opacity = o.toFixed(3);
+      el.style.transform = `translate3d(0, ${y.toFixed(1)}px, 0)`;
+      if (p >= c.a - 0.001) active = i;
+      const local = Math.max(0, Math.min(1, (p - c.a) / (c.b - c.a)));
+      railBars[i].style.height = (local * 100) + "%";
+    });
+    countEl.textContent = "0" + (active + 1) + " / 04";
+    cueEl.style.opacity = p < 0.02 ? 1 : 0;
+  }
+
+  // ---------- Motor: o tempo do vídeo segue a rolagem ----------
+  let seeking = false, seekStart = 0, auto = false;
+  v.addEventListener("seeked", () => { seeking = false; });
+
+  function tick(now) {
+    if (auto) {
+      // modo Assistir: o vídeo toca sozinho (fluido, 24 quadros reais) e a página acompanha
+      current = v.currentTime;
+      window.scrollTo(0, (current / duration) * maxY);
+      if (v.ended) stopAuto(true);
+    } else {
+      current += (target - current) * (reduceMotion ? 1 : LERP);
+      if (Math.abs(target - current) < 0.002) current = target;
+      if (seeking && now - seekStart > 300) seeking = false;   // seek travado: libera
+      if (!seeking && Math.abs(v.currentTime - current) > 0.01) {
+        seeking = true; seekStart = now;
+        v.currentTime = current;
+      }
+    }
+    updateUI(Math.max(0, Math.min(1, current / duration)));
+    requestAnimationFrame(tick);
+  }
+
+  // ---------- Botão Assistir ----------
+  const playBtn = document.getElementById("play");
+  const playLabel = document.getElementById("playLabel");
+
+  function stopAuto(finished) {
+    if (!auto) return;
+    auto = false; v.pause();
+    current = v.currentTime; readScroll();
+    if (!finished) target = current;
+    playBtn.classList.remove("on"); playLabel.textContent = "ASSISTIR";
+  }
+  function startAuto() {
+    readScroll();
+    if (progress > 0.99) { window.scrollTo(0, 0); v.currentTime = 0; }
+    else v.currentTime = target;
+    auto = true; seeking = false;
+    playBtn.classList.add("on"); playLabel.textContent = "PAUSAR";
+    v.play().catch(() => stopAuto());
+  }
+  playBtn.addEventListener("click", () => auto ? stopAuto() : startAuto());
+  const takeOver = e => { if (!playBtn.contains(e.target)) stopAuto(); };
+  window.addEventListener("wheel", takeOver, { passive: true });
+  window.addEventListener("touchstart", takeOver, { passive: true });
+  window.addEventListener("keydown", e => { if (e.key !== "Tab") takeOver(e); });
+
+  document.getElementById("again").addEventListener("click", e => {
+    e.preventDefault();
+    stopAuto();
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+  });
+
+  if (PORTRAIT_MQ.addEventListener && !window.__VIDEO__) PORTRAIT_MQ.addEventListener("change", () => location.reload());
+
+  // início
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  window.scrollTo(0, 0);
+  loadVideo();
+})();
+</script>
+<script>
+(() => {
+  "use strict";
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // entrada suave das seções
+  const items = [...document.querySelectorAll(".rv")];
+  if ("IntersectionObserver" in window && !reduce) {
+    const io = new IntersectionObserver(es => es.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+    }), { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+    items.forEach(el => io.observe(el));
+  } else items.forEach(el => el.classList.add("in"));
+
+  // linha do tempo: a luz dourada acompanha a rolagem
+  const tl = document.getElementById("timeline");
+  if (tl) {
+    const steps = [...tl.querySelectorAll(".step")];
+    const dots = steps.map(s => s.querySelector(".n"));
+    const fill = tl.querySelector(".fill");
+    let queued = false;
+    const update = () => {
+      queued = false;
+      const t = tl.getBoundingClientRect();
+      const cs = dots.map(d => { const r = d.getBoundingClientRect(); return { y: r.top + r.height / 2, x: r.left + r.width / 2 }; });
+      const first = cs[0].y, last = cs[cs.length - 1].y;
+      const ref = innerHeight * 0.62;                       // ponto da tela em que a luz "chega"
+      const f = Math.max(0, Math.min(last - first, ref - first));
+      tl.style.setProperty("--x", (cs[0].x - t.left) + "px");
+      tl.style.setProperty("--top", (first - t.top) + "px");
+      tl.style.setProperty("--len", (last - first) + "px");
+      tl.style.setProperty("--fill", f + "px");
+      fill.classList.toggle("live", f > 0 && f < last - first);
+      steps.forEach((s, i) => s.classList.toggle("on", cs[i].y <= ref));
+    };
+    const ask = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
+    addEventListener("scroll", ask, { passive: true });
+    addEventListener("resize", ask, { passive: true });
+    update();
+  }
+
+  // botões que levam ao plano
+  document.querySelectorAll("[data-goto]").forEach(a => a.addEventListener("click", e => {
+    e.preventDefault();
+    const t = document.getElementById(a.dataset.goto);
+    if (t) t.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    const f = document.getElementById("f-gatilho");
+    if (f) setTimeout(() => f.focus({ preventScroll: true }), reduce ? 0 : 700);
+  }));
+
+  // montador do plano
+  const g = document.getElementById("f-gatilho"), hb = document.getElementById("f-habito"), ac = document.getElementById("f-acao");
+  const out = document.getElementById("plano-texto"), btn = document.getElementById("copiar"), ok = document.getElementById("copiado");
+  const clean = s => s.trim().replace(/\s+/g, " ").replace(/[.,;:!]+$/, "");
+  const lower = s => s ? s.charAt(0).toLowerCase() + s.slice(1) : s;
+  let current = "";
+  function build() {
+    const a = lower(clean(g.value)), b = lower(clean(hb.value)), c = lower(clean(ac.value));
+    if (a && b && c) {
+      current = `Quando ${a}, eu não vou ${b}. Vou ${c}.`;
+      out.textContent = current; out.classList.remove("empty");
+    } else {
+      current = "";
+      out.textContent = "Preencha os três campos e o seu plano aparece aqui."; out.classList.add("empty");
+    }
+  }
+  [g, hb, ac].forEach(i => i.addEventListener("input", build));
+
+  let timer = 0;
+  function say(t) { ok.textContent = t; ok.classList.add("on"); clearTimeout(timer); timer = setTimeout(() => ok.classList.remove("on"), 2400); }
+  btn.addEventListener("click", async () => {
+    if (!current) { say("PREENCHA OS TRÊS CAMPOS"); (!g.value.trim() ? g : !hb.value.trim() ? hb : ac).focus(); return; }
+    try { await navigator.clipboard.writeText(current); say("COPIADO"); }
+    catch (e) {
+      const r = document.createRange(); r.selectNodeContents(out);
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      let done = false; try { done = document.execCommand("copy"); } catch (_) {}
+      say(done ? "COPIADO" : "SELECIONADO, COPIE");
+    }
+  });
+})();
+</script>
+</body>
+</html>
